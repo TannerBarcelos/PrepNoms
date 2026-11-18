@@ -3,7 +3,7 @@ Yet another meal prep and planner
 
 ## Plan
 
-The v1 PRD is in [docs/prds/preptable-prd-v1.md](docs/prds/preptable-prd-v1.md). The product plan behind it is in [docs/PLAN.md](docs/PLAN.md).
+The v1 PRD is in [docs/prds/preptable-prd-v1.md](docs/prds/preptable-prd-v1.md).
 
 ## Mockup
 

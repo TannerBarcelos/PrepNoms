@@ -1,6 +1,6 @@
 # Gather web mockup
 
-This is the working prototype that PrepNoms is being built from. The product plan it illustrates is in [docs/PLAN.md](../docs/PLAN.md). It's a React and TypeScript single-page app, built with Vite, that ran as a claude.ai artifact. Use it as the reference for behavior, data shapes and screens when building the native and web apps. It isn't meant to ship as-is.
+This is the working prototype that PrepTable (formerly PrepNoms) is being built from. The requirements it illustrates are in the [v1 PRD](../docs/prds/preptable-prd-v1.md). It's a React and TypeScript single-page app, built with Vite, that ran as a claude.ai artifact. Use it as the reference for behavior, data shapes and screens when building the native and web apps. It isn't meant to ship as-is.
 
 ## Run it
 

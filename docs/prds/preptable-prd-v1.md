@@ -8,7 +8,7 @@
 | Owner | Tanner Barcelos |
 | Date | November 18, 2026 |
 | Launch target | About 3 months: February 2027 |
-| Inputs | [Product plan](../PLAN.md), the Gather web mockup in [`mockup/`](../../mockup), competitor research |
+| Inputs | The Gather web mockup in [`mockup/`](../../mockup), competitor research |
 
 This PRD defines what v1 does and how we'll know it worked. It does not choose the stack, backend or vendors, except where a requirement can only be met one way. Those decisions come next, in a technical design.
 
@@ -55,7 +55,7 @@ Couples and families who meal prep juggle four tools: a recipe app or bookmarks,
 - Snacks in the plan.
 - YouTube import.
 - Grocery hand-off. Instacart comes in v1.1; Kroger and Walmart later.
-- Android app. It comes in v1.1, from the same React Native codebase.
+- Android app. It comes in v1.1, from the same Expo codebase.
 - Languages other than English.
 
 ## 5. Success metrics (90 days after launch)
@@ -74,7 +74,7 @@ Measured through privacy-first product events (see NFR-PRIV).
 
 | Area | v1 | Later |
 |---|---|---|
-| Platforms | iOS app, web app (React Native) | Android (v1.1) |
+| Platforms | iOS app, web app (Expo) | Android (v1.1) |
 | Accounts | Sign in with Apple, Google, email magic link, email and password | |
 | Households | Create, invite, approve, shared list and pantry, shared recipes, shared meals and prep | |
 | Import | Paste text, recipe website link, photo or screenshot | YouTube link |
@@ -275,7 +275,8 @@ Prices in USD. CAD and GBP set through App Store price tiers.
 | ID | Area | Requirement |
 |---|---|---|
 | NFR-PLAT-1 | Platforms | iOS app (iPhone and iPad) and a web app for current Safari, Chrome, Firefox and Edge, on desktop and mobile. Both launch together. |
-| NFR-PLAT-3 | Codebase | One React Native codebase for iOS and web, so Android in v1.1 needs store setup, Google Play billing and testing rather than a new app. This is the one technical decision made at the PRD stage. |
+| NFR-PLAT-3 | Codebase | One Expo (React Native) codebase for iOS and web, so Android in v1.1 needs store setup, Google Play billing and testing rather than a new app. This is the one technical decision made at the PRD stage. |
+| NFR-PLAT-4 | Links | Household invite links and private recipe links are ordinary web addresses. On a device with the app installed, an invite link opens the app; otherwise it opens the web app. Recipe links always open the web page, so trackers can read them. |
 | NFR-PLAT-2 | Layout | Phones always get one column, including the largest and foldable phones. Tablets and desktop get columns and a list and detail split. |
 | NFR-OFF-1 | Offline | On iOS, every screen is readable offline, and plans, list, pantry, prep progress and recipe edits work offline and sync when back online. Imports, links and barcode lookups need a connection and say so. |
 | NFR-OFF-2 | Sync | Changes from household members appear on other devices within a few seconds while online. When two people edit the same list item or pantry quantity offline, neither change is lost silently: both are kept, or the later one wins and the earlier one is shown. The exact rule is for the technical design. |
