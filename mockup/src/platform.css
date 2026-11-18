@@ -1,0 +1,146 @@
+/* Platform layers. The brand (green-black ground, mint, Archivo numerals on the label) stays the same;
+   the chrome follows each platform's own design language.
+   ios      Liquid Glass: translucent capsules with specular edges, a floating tab bar, floating sheets, SF Pro text
+   android  Material 3: tonal surfaces, pill nav indicators, segmented buttons with a check, M3 switch, Roboto text
+   desktop  the base stylesheet as is */
+
+/* ======================= iOS: Liquid Glass ======================= */
+:root[data-platform=ios] {
+  --glass: rgba(30, 58, 45, 0.42);
+  --glass-strong: rgba(38, 72, 56, 0.62);
+  --glass-edge: rgba(220, 255, 235, 0.16);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 -1px 0 rgba(255, 255, 255, 0.04), inset 0 0 0 1px var(--glass-edge);
+  --glass-blur: blur(22px) saturate(180%);
+  --tab-h: 70px;
+}
+:root[data-platform=ios] body { font-family: -apple-system, system-ui, 'SF Pro Text', 'Helvetica Neue', sans-serif; letter-spacing: -0.005em; }
+:root[data-platform=ios] .view-head h1, :root[data-platform=ios] .recipe h1 { font-family: -apple-system, system-ui, 'SF Pro Display', sans-serif; font-stretch: 100%; font-weight: 700; letter-spacing: -0.02em; font-size: clamp(32px, 8.5vw, 40px); }
+:root[data-platform=ios] .msec-title, :root[data-platform=ios] .pday h2, :root[data-platform=ios] .cat h2, :root[data-platform=ios] .panel h2, :root[data-platform=ios] .pcard h2, :root[data-platform=ios] .r-main h2, :root[data-platform=ios] .sheet-head h2 { font-family: -apple-system, system-ui, sans-serif; font-stretch: 100%; font-weight: 700; letter-spacing: -0.015em; }
+:root[data-platform=ios] .msec-title { font-size: 22px; }
+
+/* Top bar becomes a clear glass strip */
+:root[data-platform=ios] .top { background: rgba(5, 13, 9, 0.55); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border-bottom: 0; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06); }
+:root[data-platform=ios] .who { background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 0; box-shadow: var(--glass-hi); }
+:root[data-platform=ios] .who button.on { background: linear-gradient(180deg, #5be6a9, var(--mint)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 8px rgba(61, 220, 151, 0.25); }
+:root[data-platform=ios] .icon-btn { border-radius: 999px; }
+:root[data-platform=ios] .top .icon-btn { background: var(--glass); box-shadow: var(--glass-hi); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); color: var(--ink); }
+
+/* Floating glass tab bar at every width */
+:root[data-platform=ios] .tabs { left: 50%; right: auto; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: min(calc(100% - 24px), 520px); padding: 6px; border: 0; border-radius: 999px; background: rgba(20, 40, 31, 0.74); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-hi), 0 10px 30px rgba(0, 0, 0, 0.45); }
+:root[data-platform=ios] .tabs a { border-radius: 999px; min-height: 56px; font-size: 12px; transition: background .2s ease, color .2s ease; }
+:root[data-platform=ios] .tabs a.on { background: rgba(61, 220, 151, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 0 0 1px rgba(61, 220, 151, 0.28); }
+:root[data-platform=ios] .main { padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 44px); }
+:root[data-platform=ios] .toast { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 24px); }
+:root[data-platform=ios] .toast span { border-radius: 999px; background: var(--glass-strong); color: var(--ink); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-hi), 0 8px 24px rgba(0, 0, 0, 0.4); }
+
+/* Capsule glass buttons */
+:root[data-platform=ios] .btn { border-radius: 999px; border: 0; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-hi); min-height: 46px; padding: 0 18px; transition: transform .12s ease, background .2s ease; }
+:root[data-platform=ios] .btn:hover { background: var(--glass-strong); }
+:root[data-platform=ios] .btn:active { transform: scale(0.97); }
+:root[data-platform=ios] .btn.primary { background: linear-gradient(180deg, #5be6a9, var(--mint)); color: var(--mint-ink); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.1), 0 4px 14px rgba(61, 220, 151, 0.25); }
+:root[data-platform=ios] .btn.ghost { background: rgba(30, 58, 45, 0.22); }
+:root[data-platform=ios] .btn.danger { background: linear-gradient(180deg, #ffa293, var(--bad)); }
+
+/* Segmented control: glass track, lifted glass thumb */
+:root[data-platform=ios] .seg { border: 0; border-radius: 999px; padding: 3px; background: var(--glass); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-hi); }
+:root[data-platform=ios] .seg button { border-radius: 999px; min-height: 38px; }
+:root[data-platform=ios] .seg button.on { background: rgba(228, 241, 232, 0.16); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.25); }
+
+/* Grouped surfaces */
+:root[data-platform=ios] .label, :root[data-platform=ios] .panel, :root[data-platform=ios] .pcard, :root[data-platform=ios] .cook { border-radius: 22px; border-color: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+:root[data-platform=ios] .search { border-radius: 999px; border: 0; background: var(--glass); box-shadow: var(--glass-hi); }
+:root[data-platform=ios] .dchip { border-radius: 16px; }
+:root[data-platform=ios] .dchip.on { box-shadow: inset 0 1px 0 #fff, 0 4px 14px rgba(228, 241, 232, 0.18); }
+:root[data-platform=ios] .tag { border-radius: 999px; }
+:root[data-platform=ios] .switch input { width: 51px; height: 31px; border-radius: 999px; border: 0; background: rgba(120, 140, 130, 0.32); }
+:root[data-platform=ios] .switch input::after { top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+:root[data-platform=ios] .switch input:checked { background: var(--mint); }
+:root[data-platform=ios] .switch input:checked::after { background: #fff; transform: translateX(20px); }
+:root[data-platform=ios] .gi .box { border-radius: 50%; }
+
+/* Floating glass sheet */
+:root[data-platform=ios] .sheet::backdrop { background: rgba(0, 0, 0, 0.45); }
+:root[data-platform=ios] .sheet-in { left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); border: 0; border-radius: 34px; background: rgba(17, 33, 26, 0.86); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); box-shadow: var(--glass-hi), 0 20px 50px rgba(0, 0, 0, 0.5); padding-bottom: 18px; }
+@media (min-width: 640px) {
+  :root[data-platform=ios] .sheet-in { left: 50%; right: auto; bottom: auto; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-platform=ios] .tabs, :root[data-platform=ios] .btn, :root[data-platform=ios] .seg { background: var(--s2); }
+}
+
+/* ======================= Android: Material 3 ======================= */
+:root[data-platform=android] {
+  --m-surface: #0b1712; --m-container: #11211a; --m-container-high: #183026; --m-container-highest: #1f3a2e;
+  --m-secondary: #1b4a35; --m-on-secondary: #c9f0da; --m-outline: #4e7a62;
+  --tab-h: 80px;
+}
+:root[data-platform=android] body { font-family: Roboto, 'Google Sans Text', system-ui, sans-serif; }
+:root[data-platform=android] .view-head h1, :root[data-platform=android] .recipe h1 { font-family: 'Google Sans', Roboto, system-ui, sans-serif; font-stretch: 100%; font-weight: 500; letter-spacing: 0; font-size: clamp(30px, 8vw, 36px); line-height: 1.15; }
+:root[data-platform=android] .msec-title, :root[data-platform=android] .pday h2, :root[data-platform=android] .cat h2, :root[data-platform=android] .panel h2, :root[data-platform=android] .pcard h2, :root[data-platform=android] .r-main h2, :root[data-platform=android] .sheet-head h2 { font-family: 'Google Sans', Roboto, system-ui, sans-serif; font-stretch: 100%; font-weight: 500; letter-spacing: 0; }
+:root[data-platform=android] .msec-title { font-size: 22px; }
+
+/* Top app bar: flat surface */
+:root[data-platform=android] .top { background: var(--m-surface); backdrop-filter: none; -webkit-backdrop-filter: none; border-bottom: 0; min-height: 64px; }
+:root[data-platform=android] .who { background: none; border: 1px solid var(--m-outline); padding: 0; overflow: hidden; }
+:root[data-platform=android] .who button { border-radius: 0; min-height: 40px; }
+:root[data-platform=android] .who button.on { background: var(--m-secondary); color: var(--m-on-secondary); }
+
+/* Navigation bar with pill indicator; navigation rail at 640px+ */
+:root[data-platform=android] .tabs { background: var(--m-container); backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 0; padding-top: 12px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+:root[data-platform=android] .tabs a { gap: 4px; min-height: 0; font-size: 12px; font-weight: 500; color: var(--muted); border-radius: 0; }
+:root[data-platform=android] .tabs a svg { width: 64px; height: 32px; padding: 4px 20px; border-radius: 999px; box-sizing: border-box; transition: background .2s ease; }
+:root[data-platform=android] .tabs a.on { color: var(--ink); font-weight: 700; }
+:root[data-platform=android] .tabs a.on svg { background: var(--m-secondary); color: var(--m-on-secondary); }
+@media (min-width: 640px) {
+  :root[data-platform=android] .tabs { border-right: 0; background: var(--m-surface); grid-auto-rows: 76px; }
+}
+
+/* Buttons: filled, tonal, outlined, all stadium-shaped */
+:root[data-platform=android] .btn { border-radius: 999px; min-height: 48px; padding: 0 24px; font-weight: 500; letter-spacing: 0.01em; border: 0; background: var(--m-secondary); color: var(--m-on-secondary); position: relative; overflow: hidden; }
+:root[data-platform=android] .btn::after { content: ''; position: absolute; inset: 0; background: currentColor; opacity: 0; transition: opacity .15s; }
+:root[data-platform=android] .btn:hover::after { opacity: .08; }
+:root[data-platform=android] .btn:active::after { opacity: .12; }
+:root[data-platform=android] .btn.primary { background: var(--mint); color: var(--mint-ink); }
+:root[data-platform=android] .btn.ghost { background: none; color: var(--mint); box-shadow: inset 0 0 0 1px var(--m-outline); }
+:root[data-platform=android] .btn.danger { background: var(--bad); color: #2a0703; }
+
+/* Segmented buttons with a check on the selected segment */
+:root[data-platform=android] .seg { padding: 0; gap: 0; border-radius: 999px; border: 1px solid var(--m-outline); background: none; overflow: hidden; flex-wrap: nowrap; }
+:root[data-platform=android] .seg button { border-radius: 0; min-height: 46px; font-weight: 500; font-size: 14px; color: var(--ink); box-shadow: none; padding: 0 10px; }
+:root[data-platform=android] .seg button + button { border-left: 1px solid var(--m-outline); }
+:root[data-platform=android] .seg button.on { background: var(--m-secondary); color: var(--m-on-secondary); box-shadow: none; }
+:root[data-platform=android] .seg button.on::before { content: '✓'; margin-right: 6px; }
+:root[data-platform=android] .settings .seg { flex-wrap: wrap; border-radius: 20px; }
+
+/* Cards: tonal containers, no outlines */
+:root[data-platform=android] .label, :root[data-platform=android] .panel, :root[data-platform=android] .pcard, :root[data-platform=android] .cook { border: 0; border-radius: 24px; background: var(--m-container); }
+:root[data-platform=android] .search { border-radius: 999px; border: 0; background: var(--m-container-high); }
+:root[data-platform=android] .dchip { border: 0; background: var(--m-container); border-radius: 16px; }
+:root[data-platform=android] .dchip.on { background: var(--mint); color: var(--mint-ink); }
+:root[data-platform=android] .dchip.on b { color: var(--mint-ink); }
+:root[data-platform=android] .tag { border-radius: 8px; }
+:root[data-platform=android] .gi .box { border-radius: 4px; width: 22px; height: 22px; margin: 3px; }
+:root[data-platform=android] .field .inp, :root[data-platform=android] .add-row input, :root[data-platform=android] textarea { border-radius: 4px; }
+
+/* M3 switch: the thumb grows and carries a check when on */
+:root[data-platform=android] .switch input { width: 52px; height: 32px; border-radius: 999px; background: var(--m-container-highest); border: 2px solid var(--m-outline); }
+:root[data-platform=android] .switch input::after { top: 6px; left: 6px; width: 16px; height: 16px; background: var(--m-outline); }
+:root[data-platform=android] .switch input:checked { background: var(--mint); border-color: var(--mint); }
+:root[data-platform=android] .switch input:checked::after { top: 2px; left: 2px; width: 24px; height: 24px; background: var(--mint-ink); transform: translateX(20px); }
+
+/* Bottom sheet with drag handle */
+:root[data-platform=android] .sheet::backdrop { background: rgba(0, 0, 0, 0.5); }
+:root[data-platform=android] .sheet-in { border: 0; border-radius: 28px 28px 0 0; background: var(--m-container); padding-top: 22px; }
+:root[data-platform=android] .sheet-in::before { content: ''; position: absolute; top: 10px; left: 50%; width: 32px; height: 4px; margin-left: -16px; border-radius: 2px; background: var(--m-outline); }
+:root[data-platform=android] .toast span { border-radius: 4px; background: var(--ink); color: var(--bg); font-weight: 500; }
+@media (min-width: 640px) {
+  :root[data-platform=android] .sheet-in { border-radius: 28px; }
+  :root[data-platform=android] .sheet-in::before { display: none; }
+}
+@media (max-width: 400px) { :root[data-platform=android] .seg button.on::before { display: none; } }
+:root[data-platform=ios] .who-chip { background: var(--glass); border: 0; box-shadow: var(--glass-hi); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); }
+:root[data-platform=ios] .ing-pick, :root[data-platform=ios] .inp.small, :root[data-platform=ios] select, :root[data-platform=ios] .ed-ings .note-in { border-radius: 12px; }
+:root[data-platform=ios] .theirs { border-radius: 16px; }
+:root[data-platform=android] .who-chip { border: 0; background: var(--m-container-high); border-radius: 8px; }
+:root[data-platform=android] .ing-pick, :root[data-platform=android] .inp.small, :root[data-platform=android] select, :root[data-platform=android] .ed-ings .note-in { border-radius: 4px; }
+:root[data-platform=android] .theirs { border-radius: 16px; border-style: solid; border-color: transparent; background: var(--m-container); }
