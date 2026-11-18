@@ -198,7 +198,7 @@ Ideas that we did not find in any competitor during research:
 
 ## 11. Pricing direction
 
-- **7-day free trial with everything on:** households, imports, private links, grocery hand-off. No feature limits during the trial.
+- **7-day free trial with everything on:** households, imports and private links. No feature limits during the trial.
 - **After the trial: subscription.** A one-time purchase was considered and dropped. Imports and private links cost money every time someone uses them, so one-time revenue can't cover a user who keeps importing.
 - **Usage cap, stated up front.** The yearly plan includes a set amount of usage for the costly features (link, photo and YouTube import). The cap is shown on the paywall and in settings, with what's left.
 - **Top-ups on demand.** Hitting the cap doesn't lock anything else. Users can buy more usage when they need it.

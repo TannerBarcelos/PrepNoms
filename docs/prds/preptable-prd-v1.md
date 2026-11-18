@@ -54,8 +54,8 @@ Couples and families who meal prep juggle four tools: a recipe app or bookmarks,
 - Recipe discovery, social feeds, ratings.
 - Snacks in the plan.
 - YouTube import.
-- Kroger and Walmart grocery hand-off.
-- Android app.
+- Grocery hand-off. Instacart comes in v1.1; Kroger and Walmart later.
+- Android app. It comes in v1.1, from the same React Native codebase.
 - Languages other than English.
 
 ## 5. Success metrics (90 days after launch)
@@ -74,14 +74,14 @@ Measured through privacy-first product events (see NFR-PRIV).
 
 | Area | v1 | Later |
 |---|---|---|
-| Platforms | iOS app, web app | Android |
+| Platforms | iOS app, web app (React Native) | Android (v1.1) |
 | Accounts | Sign in with Apple, Google, email magic link, email and password | |
 | Households | Create, invite, approve, shared list and pantry, shared recipes, shared meals and prep | |
 | Import | Paste text, recipe website link, photo or screenshot | YouTube link |
 | Recipes | Edit, versions with back and forward, private or household | |
 | Planning | Breakfast, lunch, dinner per person; solo or household meals; targets optional | Snacks |
 | Prep | Solo prep and household prep, per-person portions, cooked-weight portioning | Leftover forecasting, freezer labels |
-| Shopping | Shared list, pantry, store packages, Instacart hand-off | Kroger, Walmart, budget view |
+| Shopping | Shared list, pantry, store packages | Instacart hand-off (v1.1), Kroger, Walmart, budget view |
 | Tracker export | Ingredient list, one line, CSV, JSON, private recipe link, staleness flag | |
 | Nutrition | USDA FoodData Central, Open Food Facts barcode lookup, user edits | Commercial branded database |
 | Billing | 7-day full trial; solo and household plans, monthly and yearly; usage cap with top-ups | |
@@ -194,7 +194,7 @@ Measured through privacy-first product events (see NFR-PRIV).
 | SHOP-3 | Amounts round up to whole store packages. Staples (spices, oils) are have or out, not weights. |
 | SHOP-4 | Any member can add, tick and remove items. Ticked items move to the cart. "Put away" moves cart items into the pantry. |
 | SHOP-5 | The pantry holds quantities on hand and have or out for staples. Any member can edit it. |
-| SHOP-6 | **Instacart hand-off:** send the list, or the unticked part of it, to Instacart and finish the order there. Available in the US and Canada where Instacart operates; hidden elsewhere. |
+| SHOP-6 | *Moved to v1.1:* Instacart hand-off (send the list, or its unticked part, to Instacart and finish the order there; US and Canada only). v1 keeps the list in the app. |
 | SHOP-7 | Items appear in store aisle order. |
 
 ### 7.9 Calorie tracker export (`EXP`)
@@ -274,9 +274,10 @@ Prices in USD. CAD and GBP set through App Store price tiers.
 
 | ID | Area | Requirement |
 |---|---|---|
-| NFR-PLAT-1 | Platforms | Native iOS app (iPhone and iPad) and a web app for current Safari, Chrome, Firefox and Edge, on desktop and mobile. |
+| NFR-PLAT-1 | Platforms | iOS app (iPhone and iPad) and a web app for current Safari, Chrome, Firefox and Edge, on desktop and mobile. Both launch together. |
+| NFR-PLAT-3 | Codebase | One React Native codebase for iOS and web, so Android in v1.1 needs store setup, Google Play billing and testing rather than a new app. This is the one technical decision made at the PRD stage. |
 | NFR-PLAT-2 | Layout | Phones always get one column, including the largest and foldable phones. Tablets and desktop get columns and a list and detail split. |
-| NFR-OFF-1 | Offline | On iOS, every screen is readable offline, and plans, list, pantry, prep progress and recipe edits work offline and sync when back online. Imports, links, barcode lookups and Instacart need a connection and say so. |
+| NFR-OFF-1 | Offline | On iOS, every screen is readable offline, and plans, list, pantry, prep progress and recipe edits work offline and sync when back online. Imports, links and barcode lookups need a connection and say so. |
 | NFR-OFF-2 | Sync | Changes from household members appear on other devices within a few seconds while online. When two people edit the same list item or pantry quantity offline, neither change is lost silently: both are kept, or the later one wins and the earlier one is shown. The exact rule is for the technical design. |
 | NFR-PERF-1 | Speed | Screens open in under 1 second on a recent iPhone with data cached. Plan portioning for a week updates in under 1 second after a change. |
 | NFR-PERF-2 | Import | Link imports show the review screen within 15 seconds; photo imports within 30 seconds, with progress shown. |
@@ -318,7 +319,7 @@ Launch target: about 3 months, February 2027, iOS and web together.
 Before launch:
 - Name: trademark and App Store search for PrepTable, domain.
 - App Store review, including subscriptions and Sign in with Apple.
-- Instacart Developer Platform approval.
+- Apply to the Instacart Developer Platform early, so approval is ready for v1.1.
 - Success metric targets set (section 5).
 - Help pages, including how to import into common calorie trackers by name.
 
@@ -326,7 +327,9 @@ Milestones and sequencing come from the technical design.
 
 ## 11. Later (not v1)
 
-YouTube import · Android · Kroger and Walmart hand-off · snacks · leftover forecasting · freezer labels · weekly budget view from store prices · commercial branded-food database · Apple Health (plan-level only, if useful) · languages beyond English · sharing a recipe link with someone outside the household.
+**v1.1:** Instacart hand-off · Android.
+
+**After that:** YouTube import · Kroger and Walmart hand-off · snacks · leftover forecasting · freezer labels · weekly budget view from store prices · commercial branded-food database · Apple Health (plan-level only, if useful) · languages beyond English · sharing a recipe link with someone outside the household.
 
 ## 12. Open questions
 
