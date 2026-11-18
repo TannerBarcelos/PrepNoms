@@ -1,6 +1,8 @@
 # PrepNoms product plan
 
-Status: working plan, November 2026. This is the input for the product PRD. Technical decisions (stack, backend, vendors) come after the PRD and are only noted here where they change what the product can do.
+Status: working plan, November 2026. The v1 decisions are in the PRD: [prds/preptable-prd-v1.md](prds/preptable-prd-v1.md). Where the two differ, the PRD wins.
+
+This was the input for the PRD. Technical decisions (stack, backend, vendors) come after the PRD and are only noted here where they change what the product can do.
 
 The working name is PrepNoms. The mockup is called Gather. Neither is final (see [Name](#name)).
 
@@ -181,7 +183,7 @@ From app store reviews and Reddit threads collected in the research report.
 | Calorie numbers in the planner don't match the tracker | The tracker gets exact per-serving nutrition, and stale copies are flagged |
 | Prep instructions ignore batch cooking | Batch totals and cooked-weight portioning |
 | Shopping list ignores what you have | Real pantry, updated by shopping and cooking |
-| Subscription for basic features | A full free trial, then a choice of subscription or a one-time purchase |
+| Subscription for basic features | A full free trial, then a subscription with a clearly stated usage cap and top-ups |
 | Apps shut down and take recipes with them (Mealime closes Oct 21, 2026) | Export everything any time, in open formats |
 
 ### What's new here
@@ -197,18 +199,17 @@ Ideas that we did not find in any competitor during research:
 ## 11. Pricing direction
 
 - **7-day free trial with everything on:** households, imports, private links, grocery hand-off. No feature limits during the trial.
-- **After the trial, two ways to pay:**
-  - **Subscription**, monthly or yearly. The research put comparable apps around $49.99 a year.
-  - **One-time purchase** that unlocks the app for good, the same model as RoamReady. Priced so it pays back against roughly two to three years of the subscription.
-- **Ongoing costs.** Link, photo and YouTube import and private links cost money per use. Those may need a generous monthly allowance on the one-time purchase, with the subscription covering heavy use. To decide in the PRD.
-- **When the trial ends without a purchase:** recipes stay readable and every export keeps working, so nobody's recipes are held hostage. Planning, prep and the shared list lock until they buy.
+- **After the trial: subscription.** A one-time purchase was considered and dropped. Imports and private links cost money every time someone uses them, so one-time revenue can't cover a user who keeps importing.
+- **Usage cap, stated up front.** The yearly plan includes a set amount of usage for the costly features (link, photo and YouTube import). The cap is shown on the paywall and in settings, with what's left.
+- **Top-ups on demand.** Hitting the cap doesn't lock anything else. Users can buy more usage when they need it.
+- **When the trial ends without a purchase:** recipes stay readable and every export keeps working, so nobody's recipes are held hostage.
 - No ads. No selling data.
 
-To decide in the PRD: subscription and one-time prices, whether a household needs one purchase or one per person, and the import allowance on the one-time purchase.
+Prices, cap size and top-up packs are set in the PRD.
 
 ## 12. Name
 
-PrepNoms and Gather are both placeholders and both have conflicts. Candidates from the research, all needing a trademark and App Store check: Tablefolk, Sunday Table, Pantry Bell.
+The product is named **PrepTable** (the name has to include "Prep"). Trademark and App Store checks are pending. Preppd, PrepFlow, PrepYourWeek and Meal Prep Sunday already exist on the App Store.
 
 ## 13. Roadmap
 
@@ -224,7 +225,7 @@ PrepNoms and Gather are both placeholders and both have conflicts. Candidates fr
 2. Should someone who doesn't count calories be able to turn macros off entirely?
 3. Snacks: plan them, or leave them to the tracker?
 4. How long should private links last by default: 7 or 30 days?
-5. Prices for the subscription and the one-time purchase, and import allowance on the one-time purchase.
+5. Subscription prices, usage cap and top-up packs.
 6. Should recipe versions be visible to household members when a recipe is shared?
 7. Web app at launch, or iOS first?
 8. Final name.
