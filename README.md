@@ -3,7 +3,7 @@ Yet another meal prep and planner
 
 ## Plan
 
-The v1 PRD is in [docs/prds/preptable-prd-v1.md](docs/prds/preptable-prd-v1.md).
+The v1 PRD is in [docs/prds/preptable-prd-v1.md](docs/prds/preptable-prd-v1.md). The competitor analysis is in [docs/research/competitor-analysis.md](docs/research/competitor-analysis.md).
 
 ## Mockup
 

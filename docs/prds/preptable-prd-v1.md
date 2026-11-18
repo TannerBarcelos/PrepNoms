@@ -8,7 +8,7 @@
 | Owner | Tanner Barcelos |
 | Date | November 18, 2026 |
 | Launch target | About 3 months: February 2027 |
-| Inputs | The Gather web mockup in [`mockup/`](../../mockup), competitor research |
+| Inputs | The Gather web mockup in [`mockup/`](../../mockup), [competitor analysis](../research/competitor-analysis.md) |
 
 This PRD defines what v1 does and how we'll know it worked. It does not choose the stack, backend or vendors, except where a requirement can only be met one way. Those decisions come next, in a technical design.
 
