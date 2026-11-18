@@ -8,6 +8,7 @@ import { Shop } from './shop'
 import { PrepPrompt } from './prompt'
 import { detectForm } from './platform'
 import { RecipeEditor, IngredientsView } from './editor'
+import type { Seed } from './importer'
 import { Settings } from './settings'
 
 const TABS = [['today', 'Today'], ['plan', 'Plan'], ['prep', 'Prep'], ['shop', 'Shop'], ['recipes', 'Recipes']] as const
@@ -47,7 +48,7 @@ function Shell() {
   const { base, catalogEdits, recipes, personal, me, mode, publish, toastMsg, sync } = useStore()
   const [tab, setTab] = useState<Tab>(readHash)
   const [recipe, setRecipe] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ id: string | null; copyFrom?: string } | null>(null)
+  const [editing, setEditing] = useState<{ id: string | null; copyFrom?: string; seed?: Seed; k?: number } | null>(null)
   const wide = useWide()
   useEffect(() => { const f = () => { setTab(readHash()); setRecipe(null); setEditing(null) }; addEventListener('hashchange', f); return () => removeEventListener('hashchange', f) }, [])
   const lib = useMemo(() => buildLibrary(base, catalogEdits, recipes), [base, catalogEdits, recipes])
@@ -58,12 +59,12 @@ function Shell() {
   const nav: Nav = {
     openRecipe: (id) => { setEditing(null); setRecipe(id); if (tab !== 'recipes' || !wide) window.scrollTo(0, 0) },
     go,
-    edit: (id, copyFrom) => { setEditing({ id, copyFrom }); window.scrollTo(0, 0) },
+    edit: (id, copyFrom, seed) => { setEditing({ id, copyFrom, seed, k: Date.now() }); window.scrollTo(0, 0) },
   }
   const doneEditing = (savedId: string | null) => { setEditing(null); if (savedId) setRecipe(savedId); window.scrollTo(0, 0) }
   const showDetail = recipe && !(tab === 'recipes' && wide)
   let body
-  if (editing) body = <RecipeEditor key={`${editing.id}-${editing.copyFrom}`} lib={lib} id={editing.id} copyFrom={editing.copyFrom} onDone={doneEditing} />
+  if (editing) body = <RecipeEditor key={`${editing.id}-${editing.copyFrom}-${editing.k}`} lib={lib} id={editing.id} copyFrom={editing.copyFrom} seed={editing.seed} onDone={doneEditing} />
   else if (showDetail) body = <RecipeView lib={lib} derived={derived} id={recipe!} onBack={() => setRecipe(null)} showBack nav={nav} />
   else if (tab === 'today') body = <Today lib={lib} derived={derived} nav={nav} />
   else if (tab === 'plan') body = <Plan lib={lib} derived={derived} nav={nav} />
@@ -74,7 +75,7 @@ function Shell() {
   else body = (
     <div className="split">
       <RecipeList lib={lib} derived={derived} nav={nav} selected={recipe} />
-      {wide && <div className="split-detail">{recipe ? <RecipeView lib={lib} derived={derived} id={recipe} onBack={() => setRecipe(null)} showBack={false} nav={nav} /> : <p className="empty pane-empty">Pick a recipe to see its portions, steps and Foodnoms copy.</p>}</div>}
+      {wide && <div className="split-detail">{recipe ? <RecipeView lib={lib} derived={derived} id={recipe} onBack={() => setRecipe(null)} showBack={false} nav={nav} /> : <p className="empty pane-empty">Pick a recipe to see its portions, steps and versions.</p>}</div>}
     </div>
   )
   return (

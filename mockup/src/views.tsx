@@ -1,26 +1,19 @@
 import { useMemo, useState } from 'react'
-import type { Day, LoggedFood, Mode, Recipe, StoredRecipe } from './types'
+import type { Day, Mode, Recipe, StoredRecipe } from './types'
 import { DAYS, DAY_NAME } from './types'
 import type { Library } from './data'
 import type { Derived, Entry, PrepGroup } from './engine'
-import { add, approx, metric, applyUsage, basePortion, canMakeNow, countOf, dateOf, dayList, foodnoms, isFish, makeNut, modeOf, pantryScore, prepGroups, shortDate, statusOf, suggest, todayKey, mondayOf, sum, usage } from './engine'
-import { useStore, copyText } from './store'
+import { approx, metric, applyUsage, basePortion, canMakeNow, countOf, dateOf, dayList, isFish, makeNut, modeOf, pantryScore, prepGroups, shortDate, suggest, todayKey, mondayOf, sum, usage } from './engine'
+import { useStore } from './store'
 import { Amounts, Icon, MacroLabel, Macros, Seg, Sheet } from './ui'
+import { TrackerButton, exportState } from './export'
+import { ensureHistory, moveTo } from './versions'
+import type { Seed } from './importer'
+import { AddRecipeSheet } from './editor'
 
-export interface Nav { openRecipe: (id: string) => void; go: (tab: string) => void; edit: (id: string | null, copyFrom?: string) => void }
+export interface Nav { openRecipe: (id: string) => void; go: (tab: string) => void; edit: (id: string | null, copyFrom?: string, seed?: Seed) => void }
 export const who = (p: string) => (p === 'tanner' ? 'Tanner' : p === 'jen' ? 'Jen' : 'Someone')
 
-function FoodnomsButtons({ lib, r, f }: { lib: Library; r: Recipe; f: ReturnType<typeof basePortion> }) {
-  const { toast } = useStore()
-  return (
-    <div className="fn-row">
-      <button className="btn" onClick={() => copyText(foodnoms(lib, r, f, ', '), toast, 'Copied 1 serving as one line')}><Icon name="copy" size={18} />Copy for Foodnoms</button>
-      <button className="btn ghost" onClick={() => copyText(foodnoms(lib, r, f, '\n'), toast, 'Copied 1 serving, one ingredient per line')}><Icon name="copy" size={18} />Copy as list</button>
-    </div>
-  )
-}
-
-/* ---------------- Today ---------------- */
 const SECTIONS: { key: string; title: string; slots: Entry['slot'][] }[] = [
   { key: 'breakfast', title: 'Breakfast', slots: ['breakfast', 'latte'] },
   { key: 'lunch', title: 'Lunch', slots: ['lunch', 'withLunch'] },
@@ -29,32 +22,25 @@ const SECTIONS: { key: string; title: string; slots: Entry['slot'][] }[] = [
 ]
 
 export function Today({ lib, derived, nav }: { lib: Library; derived: Derived; nav: Nav }) {
-  const { personal, update } = useStore()
+  const { personal } = useStore()
   const p = personal.plan
   const [day, setDay] = useState<Day>(todayKey())
   const [open, setOpen] = useState<Record<string, boolean>>({})
-  const [logging, setLogging] = useState<LoggedFood['section'] | null>(null)
   const dv = derived.days.find((d) => d.day === day)!
-  const doneKey = (e: Entry) => `${p.weekOf}:${e.key}`
-  const isDone = (e: Entry) => !!personal.done[doneKey(e)]
-  const extras = personal.extras?.[`${p.weekOf}:${day}`] ?? []
-  const extraM = sum(extras.map((x) => x.macro))
-  const totals = add(dv.totals, extraM)
-  const eaten = add(sum(dv.entries.filter(isDone).map((e) => e.macro)), extraM)
-  const status = derived.targets ? statusOf(derived.targets, totals) : dv.status
   const hasMeals = dv.entries.some((e) => e.recipeId)
   const date = dateOf(p.weekOf, day)
-  const removeExtra = (id: string) => update((s) => ({ ...s, extras: { ...s.extras, [`${p.weekOf}:${day}`]: (s.extras?.[`${p.weekOf}:${day}`] ?? []).filter((x) => x.id !== id) } }))
+  const changed = dv.entries.filter((e) => e.recipeId && exportState(personal, lib, lib.recipes[e.recipeId], derived.formulas[e.recipeId]) === 'changed').length
   return (
     <div className="view today">
       <header className="view-head">
-        <h1>{day === todayKey() && p.weekOf === mondayOf() ? 'Today' : DAY_NAME[day]}<span className="sub">{DAY_NAME[day]}, {shortDate(date)}</span></h1>
+        <h1>{day === todayKey() && p.weekOf === mondayOf() ? 'Today' : DAY_NAME[day]}<span className="sub">{DAY_NAME[day]}, {shortDate(date)}. What's planned and what to cook.</span></h1>
       </header>
       <DayStrip value={day} onChange={(d) => { setDay(d); setOpen({}) }} derived={derived} />
       <PrepDayNote derived={derived} lib={lib} day={day} nav={nav} />
       <div className="today-grid">
         <aside className="today-side">
-          <MacroLabel m={totals} eaten={eaten} t={derived.targets} status={status} title={`${DAY_NAME[day]}`} />
+          <MacroLabel m={dv.totals} t={derived.targets} status={dv.status} title={`${DAY_NAME[day]}'s plan`} />
+          <p className="muted small plan-note">The plan's totals against your targets. Your calorie tracker keeps the log of what you actually eat.{changed ? ` ${changed} recipe${changed > 1 ? 's' : ''} changed since you last copied ${changed > 1 ? 'them' : 'it'}.` : ''}</p>
         </aside>
         <div className="today-main">
           {!hasMeals && (
@@ -66,48 +52,37 @@ export function Today({ lib, derived, nav }: { lib: Library; derived: Derived; n
           <div className="meals">
             {SECTIONS.map((sec) => {
               const es = dv.entries.filter((e) => sec.slots.includes(e.slot))
-              const xs = extras.filter((x) => x.section === sec.key)
-              const m = add(sum(es.map((e) => e.macro)), sum(xs.map((x) => x.macro)))
-              const n = es.filter(isDone).length
-              const allDone = es.length > 0 && n === es.length
-              const isOpen = open[sec.key] ?? !allDone
+              if (!es.length) return null
+              const m = sum(es.map((e) => e.macro))
+              const isOpen = open[sec.key] ?? true
               const id = `sec-${sec.key}`
               return (
-                <section key={sec.key} className={`msec${allDone ? ' done' : ''}`}>
+                <section key={sec.key} className="msec">
                   <h2>
                     <button className="msec-head" aria-expanded={isOpen} aria-controls={id} onClick={() => setOpen((o) => ({ ...o, [sec.key]: !isOpen }))}>
                       <span className="chev" aria-hidden="true"><Icon name="chev" size={20} /></span>
                       <span className="msec-title">{sec.title}</span>
-                      <span className="msec-sum num">{Math.round(m.kcal)} Cal<span>{!es.length ? (xs.length ? 'Logged' : 'Nothing yet') : allDone ? 'Eaten' : `${n} of ${es.length} eaten`}</span></span>
+                      <span className="msec-sum num">{Math.round(m.kcal)} Cal<span>{Math.round(m.proteinG)} g protein</span></span>
                     </button>
                   </h2>
                   <ul id={id} className="msec-items" hidden={!isOpen}>
                     {es.map((e) => {
                       const r = e.recipeId ? lib.recipes[e.recipeId] : null
-                      const d = isDone(e)
+                      const f = r ? derived.formulas[r.id] : null
+                      const st = r && f ? exportState(personal, lib, r, f) : 'never'
                       return (
-                        <li key={e.key} className={`mi${d ? ' done' : ''}`}>
+                        <li key={e.key} className="mi">
                           <div className="mi-row">
                             <div className="mi-body">
                               {r ? <button className="mi-name linkish" onClick={() => nav.openRecipe(r.id)}>{r.name}</button> : <span className="mi-name">{e.name}</span>}
-                              <span className="mi-meta">{r && <span className={`tag ${e.mode}`}>{e.mode === 'prep' ? 'From prep' : 'Cook fresh'}</span>}<Macros m={e.macro} /></span>
+                              <span className="mi-meta">{r && <span className={`tag ${e.mode}`}>{e.mode === 'prep' ? 'From prep' : 'Cook fresh'}</span>}{st === 'changed' && <span className="tag warn">Changed since copied</span>}<Macros m={e.macro} /></span>
                             </div>
-                            <button className={`tick${d ? ' on' : ''}`} aria-pressed={d} aria-label={`${d ? 'Unmark' : 'Mark'} ${e.name} as eaten`}
-                              onClick={() => update((s) => ({ ...s, done: { ...s.done, [doneKey(e)]: !d } }))}><Icon name="check" size={20} /></button>
+                            {r && f ? <TrackerButton lib={lib} r={r} f={f} compact /> : <span />}
                           </div>
                           {r && e.mode === 'fresh' && <CookCard lib={lib} derived={derived} e={e} weekOf={p.weekOf} />}
                         </li>
                       )
                     })}
-                    {xs.map((x) => (
-                      <li key={x.id} className="mi done logged">
-                        <div className="mi-row">
-                          <div className="mi-body"><span className="mi-name">{x.name}</span><span className="mi-meta"><span className="tag prep">Logged</span><Macros m={x.macro} /></span></div>
-                          <button className="icon-btn" aria-label={`Remove ${x.name}`} onClick={() => removeExtra(x.id)}><Icon name="close" size={18} /></button>
-                        </div>
-                      </li>
-                    ))}
-                    <li className="mi add-food"><button className="linkish add-link" onClick={() => setLogging(sec.key as LoggedFood['section'])}><Icon name="plus" size={18} />Log something else</button></li>
                   </ul>
                 </section>
               )
@@ -115,32 +90,7 @@ export function Today({ lib, derived, nav }: { lib: Library; derived: Derived; n
           </div>
         </div>
       </div>
-      <Sheet open={!!logging} onClose={() => setLogging(null)} title="Log food">
-        {logging && <LogFood section={logging} onDone={(x) => { if (x) update((s) => ({ ...s, extras: { ...s.extras, [`${p.weekOf}:${day}`]: [...(s.extras?.[`${p.weekOf}:${day}`] ?? []), x] } })); setLogging(null) }} />}
-      </Sheet>
     </div>
-  )
-}
-
-function LogFood({ section, onDone }: { section: LoggedFood['section']; onDone: (x: LoggedFood | null) => void }) {
-  const [f, setF] = useState({ name: '', kcal: '', p: '', c: '', fat: '', section })
-  const [err, setErr] = useState<string | null>(null)
-  const set = (patch: Partial<typeof f>) => setF((x) => ({ ...x, ...patch }))
-  const num = (k: 'kcal' | 'p' | 'c' | 'fat', label: string, unit: string) => <label className="field" htmlFor={`lf-${k}`}><span>{label}</span><span className="inp"><input id={`lf-${k}`} type="number" inputMode="decimal" step="any" value={f[k]} onChange={(e) => set({ [k]: e.target.value } as Partial<typeof f>)} /><em>{unit}</em></span></label>
-  return (
-    <form className="ing-form" onSubmit={(e) => {
-      e.preventDefault()
-      if (!f.name.trim()) return setErr('Name what you ate.')
-      if (!(Number(f.kcal) > 0)) return setErr('Enter the calories. Protein, carbs and fat are optional.')
-      onDone({ id: Math.random().toString(36).slice(2, 9), name: f.name.trim(), section: f.section, macro: { kcal: Number(f.kcal), proteinG: Number(f.p) || 0, carbsG: Number(f.c) || 0, fatG: Number(f.fat) || 0 } })
-    }}>
-      {err && <p className="err" role="alert">{err}</p>}
-      <label className="field" htmlFor="lf-name"><span>What you ate</span><span className="inp"><input id="lf-name" value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder="Costco hot dog" /></span></label>
-      <Seg label="Meal" value={f.section} onChange={(v) => set({ section: v })} options={[['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snacks', 'Snacks']]} />
-      <div className="fields four">{num('kcal', 'Calories', 'Cal')}{num('p', 'Protein', 'g')}{num('c', 'Carbs', 'g')}{num('fat', 'Fat', 'g')}</div>
-      <p className="muted small">Counts as eaten for the day. Log it in Foodnoms too.</p>
-      <div className="btn-grid"><button className="btn primary" type="submit">Add to the day</button><button className="btn ghost" type="button" onClick={() => onDone(null)}>Cancel</button></div>
-    </form>
   )
 }
 
@@ -176,7 +126,7 @@ function CookCard({ lib, derived, e, weekOf }: { lib: Library; derived: Derived;
       <summary>How to cook it<span className="muted">{r.prepMinutes + r.cookMinutes} min, one serving{cooked ? ', cooked' : ''}</span></summary>
       <Amounts lib={lib} r={r} f={f} />
       <ol className="steps">{r.steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
-      <FoodnomsButtons lib={lib} r={r} f={f} />
+      <TrackerButton lib={lib} r={r} f={f} />
       <button className={`btn wide ${cooked ? 'ghost' : 'primary'} cooked-btn`} aria-pressed={cooked} onClick={toggle}><Icon name="check" size={18} />{cooked ? 'Cooked. Undo' : 'Mark cooked'}</button>
     </details>
   )
@@ -449,8 +399,8 @@ function PrepCard({ lib, g, weekOf, done, setDone, nav }: { lib: Library; g: Pre
               )
             })}
           </ol>
-          {allDone || done ? <p className="ok-line"><Icon name="check" size={18} />All {n} containers filled. Log one serving in Foodnoms each day you eat one.</p> : null}
-          <FoodnomsButtons lib={lib} r={g.recipe} f={g.formula} />
+          {allDone || done ? <p className="ok-line"><Icon name="check" size={18} />All {n} containers filled. Each one is a serving of the recipe you copy to your calorie tracker.</p> : null}
+          <TrackerButton lib={lib} r={g.recipe} f={g.formula} />
         </div>
       )}
     </article>
@@ -464,6 +414,7 @@ export function RecipeList({ lib, derived, nav, selected }: { lib: Library; deri
   const [type, setType] = useState<'all' | 'breakfast' | 'lunch' | 'dinner'>('all')
   const [can, setCan] = useState(false)
   const [showHidden, setShowHidden] = useState(false)
+  const [adding, setAdding] = useState(false)
   const nut = makeNut(lib)
   const p = personal.plan
   const planned = new Set(DAYS.flatMap((d) => Object.values(p.days[d])).filter(Boolean))
@@ -482,10 +433,11 @@ export function RecipeList({ lib, derived, nav, selected }: { lib: Library; deri
   )
   return (
     <div className="view rlist">
+      <AddRecipeSheet lib={lib} open={adding} onClose={() => setAdding(false)} onSeed={(s) => nav.edit(null, undefined, s)} onManual={() => nav.edit(null)} />
       <header className="view-head row">
         <h1>Recipes<span className="sub">{lib.mine.length} in your library</span></h1>
         <div className="head-actions">
-          <button className="btn primary" onClick={() => nav.edit(null)}><Icon name="plus" size={18} />New recipe</button>
+          <button className="btn primary" onClick={() => setAdding(true)}><Icon name="plus" size={18} />Add recipe</button>
           <button className="btn ghost" onClick={() => nav.go('ingredients')}>Ingredients</button>
         </div>
       </header>
@@ -494,7 +446,7 @@ export function RecipeList({ lib, derived, nav, selected }: { lib: Library; deri
         <Seg label="Meal" value={type} onChange={setType} options={[['all', 'All'], ['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner']]} />
         <label className="switch"><input type="checkbox" id="r-can" checked={can} onChange={(e) => setCan(e.target.checked)} /><span>Can make now, from your pantry</span></label>
       </div>
-      {list.length === 0 && <p className="empty">{can ? 'Nothing is fully covered by your pantry yet. Put groceries away on the Shop tab, or add what you have under Pantry.' : q ? `No recipes match “${q}”. Try a protein like chicken or salmon.` : 'No recipes here yet. Tap New recipe to add one.'}</p>}
+      {list.length === 0 && <p className="empty">{can ? 'Nothing is fully covered by your pantry yet. Put groceries away on the Shop tab, or add what you have under Pantry.' : q ? `No recipes match “${q}”. Try a protein like chicken or salmon.` : 'No recipes here yet. Tap Add recipe to bring one in.'}</p>}
       <ul className="rcards">{list.map(card)}</ul>
       {lib.hidden.length > 0 && (
         <div className="hidden-block">
@@ -512,6 +464,7 @@ export function RecipeView({ lib, derived, id, onBack, showBack, nav }: { lib: L
   const [adding, setAdding] = useState(false)
   const [adjust, setAdjust] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
+  const [showHist, setShowHist] = useState(false)
   if (!r) return <div className="view"><p className="empty">That recipe isn't in your library.</p></div>
   const p = personal.plan
   const nut = makeNut(lib)
@@ -535,7 +488,8 @@ export function RecipeView({ lib, derived, id, onBack, showBack, nav }: { lib: L
     setAdding(false); toast(`Added to ${days.length === 1 ? DAY_NAME[days[0]] : `${days.length} days`}`)
   }
   const original = r.base ?? (r.custom ? null : base.recipes[personal.profile].find((x) => x.id === id) ?? null)
-  const edited = !r.custom && !!r.updatedAt && !!original && JSON.stringify({ ...original, updatedAt: undefined }) !== JSON.stringify({ ...r, base: undefined, updatedAt: undefined, hidden: undefined })
+  const { history, pos } = ensureHistory(r, original)
+  const go = (i: number) => { saveRecipe(moveTo(r, i, original)); toast(i === history.length - 1 ? 'Back to the newest version' : `Using version ${i + 1}`) }
   return (
     <article className="view recipe">
       {showBack && <button className="btn ghost back" onClick={onBack}><Icon name="back" size={20} />Back</button>}
@@ -547,17 +501,26 @@ export function RecipeView({ lib, derived, id, onBack, showBack, nav }: { lib: L
           <button className="btn" onClick={() => nav.edit(id)}><Icon name="edit" size={18} />Edit</button>
           <button className="btn ghost" onClick={() => nav.edit(null, id)}><Icon name="copy" size={18} />Duplicate</button>
           <button className="btn ghost" onClick={() => { saveRecipe({ ...r, hidden: !r.hidden }); toast(r.hidden ? 'Back in your library' : 'Hidden from your library and pickers') }}>{r.hidden ? 'Unhide' : 'Hide'}</button>
-          {edited && original && <button className="btn ghost" onClick={() => { saveRecipe({ ...original, hidden: r.hidden }); toast('Reset to the original') }}>Reset to original</button>}
           {r.custom && (confirmDel
             ? <button className="btn danger" onClick={async () => { await deleteRecipe(id); setPlan((pl) => ({ ...pl, days: Object.fromEntries(DAYS.map((d) => [d, Object.fromEntries(Object.entries(pl.days[d]).map(([k, v]) => [k, v === id ? null : v]))])) as typeof pl.days })); onBack(); toast('Recipe deleted') }}>Tap again to delete</button>
             : <button className="btn ghost" onClick={() => setConfirmDel(true)}>Delete</button>)}
         </div>
       </header>
+      {history.length > 1 && (
+        <div className="ver-bar" role="group" aria-label="Recipe versions">
+          <button className="icon-btn" aria-label="Previous version" disabled={pos === 0} onClick={() => go(pos - 1)}><Icon name="back" size={20} /></button>
+          <button className="ver-mid linkish" onClick={() => setShowHist(true)}>
+            <b>Version {pos + 1} of {history.length}</b>
+            <span className="muted small">{history[pos].note}{history[pos].at !== 'original' ? `, ${new Date(history[pos].at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}{pos < history.length - 1 ? '. Newer versions are kept.' : ''}</span>
+          </button>
+          <button className="icon-btn fwd" aria-label="Next version" disabled={pos === history.length - 1} onClick={() => go(pos + 1)}><Icon name="back" size={20} /></button>
+        </div>
+      )}
       <div className="r-grid">
         <div className="r-side">
           <MacroLabel m={f.perServing} title="One serving" compact />
           {f.adjusted && <p className="muted small">Portioned for your targets{plannedDays.length ? ` across ${plannedDays.length} planned day${plannedDays.length > 1 ? 's' : ''}` : ''}.</p>}
-          <FoodnomsButtons lib={lib} r={r} f={f} />
+          <TrackerButton lib={lib} r={r} f={f} />
           <div className="mode-box">
             <h3>How you'll make it</h3>
             {isFish(r) ? <p className="muted small">Cook fresh. Fish doesn't hold up as prepped containers, so it's always made the night you eat it.</p>
@@ -604,6 +567,17 @@ export function RecipeView({ lib, derived, id, onBack, showBack, nav }: { lib: L
           <p className="small">{r.source.url ? <a href={r.source.url} target="_blank" rel="noopener noreferrer">{r.source.title || r.source.url}{r.source.site ? `, ${r.source.site}` : ''} <Icon name="ext" size={14} /></a> : r.source.title}{r.source.changes ? `. ${r.source.changes}` : ''}</p></>}
         </div>
       </div>
+      <Sheet open={showHist} onClose={() => setShowHist(false)} title="Versions">
+        <ol className="ver-list">
+          {history.map((v, i) => (
+            <li key={i} className={i === pos ? 'cur' : ''}>
+              <span className="gi-main"><b>Version {i + 1}{i === pos ? ', in use' : ''}</b><span className="muted small">{v.note}{v.at !== 'original' ? `, ${new Date(v.at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : ''}</span></span>
+              {i !== pos && <button className="btn ghost small-btn" onClick={() => { go(i); setShowHist(false) }}>Use this</button>}
+            </li>
+          )).reverse()}
+        </ol>
+        <p className="muted small">Editing an older version saves it as a new version at the top. Nothing in this list is deleted.</p>
+      </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)} title={`Add ${slot}`}>
         <div className="add-days">
           {DAYS.map((d) => <button key={d} className="pslot" onClick={() => addTo([d])}><span className="pslot-k">{DAY_NAME[d]}</span><span className="pslot-name">{p.days[d][slot] ? lib.recipes[p.days[d][slot]!]?.name : `No ${slot} yet`}</span></button>)}

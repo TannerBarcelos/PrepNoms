@@ -5,6 +5,9 @@ import { CATEGORY_ORDER, PKG } from './data'
 import { makeNut, portion, pkgOf } from './engine'
 import { useStore } from './store'
 import { Icon, MacroLabel, Seg, Sheet } from './ui'
+import { commitEdit, content } from './versions'
+import type { Seed } from './importer'
+import { parseRecipeText } from './importer'
 
 const RATIO: Record<Role, [number, number]> = { fixed: [1, 1], protein: [0.75, 1.5], sauce: [0.75, 1.25], seasoning: [0.75, 1.25], fat: [0.5, 1.3], vegetable: [0.8, 1.75], starch: [0.4, 1.5] }
 const ROLES: [Role, string][] = [['protein', 'Protein'], ['starch', 'Carb'], ['vegetable', 'Vegetable'], ['fat', 'Fat or oil'], ['sauce', 'Sauce'], ['seasoning', 'Seasoning'], ['fixed', 'Fixed amount']]
@@ -14,7 +17,7 @@ const guessRole = (c: CatalogItem): Role => c.category === 'Meat & Seafood' ? 'p
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'item'
 const rid = () => Math.random().toString(36).slice(2, 7)
 
-type Row = { key: string; ingredientId: string; quantity: string; role: Role; notes: string }
+type Row = { key: string; ingredientId: string; quantity: string; role: Role; notes: string; flag?: string }
 interface Draft { name: string; description: string; mealType: MealType; cuisine: string; primaryProtein: string; prepMinutes: string; cookMinutes: string; flexible: boolean; rows: Row[]; steps: string[]; storage: string; sourceTitle: string; sourceUrl: string; sourceNotes: string }
 
 function toDraft(r: Recipe | null): Draft {
@@ -50,11 +53,18 @@ function build(lib: Library, d: Draft, id: string, profileId: Recipe['profileId'
 }
 
 /* ---------------- Recipe editor ---------------- */
-export function RecipeEditor({ lib, id, copyFrom, onDone }: { lib: Library; id: string | null; copyFrom?: string; onDone: (savedId: string | null) => void }) {
+export function RecipeEditor({ lib, id, copyFrom, seed, onDone }: { lib: Library; id: string | null; copyFrom?: string; seed?: Seed; onDone: (savedId: string | null) => void }) {
   const { me, saveRecipe, toast, base } = useStore()
   const existing = id ? lib.recipes[id] ?? null : null
   const source = existing ?? (copyFrom ? lib.recipes[copyFrom] ?? null : null)
-  const [d, setD] = useState<Draft>(() => { const x = toDraft(source); if (copyFrom && !existing) x.name = `${x.name} (copy)`; return x })
+  const [d, setD] = useState<Draft>(() => {
+    const x = toDraft(source)
+    if (copyFrom && !existing) x.name = `${x.name} (copy)`
+    if (seed) Object.assign(x, { name: seed.name, description: seed.description, mealType: seed.mealType, steps: seed.steps.length ? seed.steps : [''], sourceTitle: 'Imported', sourceNotes: seed.source,
+      rows: seed.rows.map((r) => ({ key: rid(), ingredientId: r.ingredientId, quantity: String(r.quantity), role: r.role, notes: r.notes, flag: r.flag })) })
+    return x
+  })
+  const [unmatched, setUnmatched] = useState<string[]>(seed?.unmatched ?? [])
   const [picking, setPicking] = useState<string | 'new' | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -68,10 +78,9 @@ export function RecipeEditor({ lib, id, copyFrom, onDone }: { lib: Library; id: 
     if (d.rows.some((r) => !(Number(r.quantity) > 0))) return setErr('Every ingredient needs an amount above zero, or remove it.')
     setErr(null); setSaving(true)
     const newId = existing ? existing.id : `u-${slug(d.name)}-${rid()}`
-    const r = build(lib, d, newId, me.profile, existing)
-    if (existing && !existing.custom && !existing.base) r.base = base.recipes[me.profile].find((x) => x.id === existing.id) ?? { ...existing, base: undefined } as Recipe
-    if (!existing) { r.custom = true; delete r.base; delete r.hidden }
-    await saveRecipe(r)
+    const built = content(build(lib, d, newId, me.profile, existing))
+    const original = existing ? existing.base ?? (existing.custom ? null : base.recipes[me.profile].find((x) => x.id === existing.id) ?? null) : null
+    await saveRecipe(commitEdit(existing, built, original))
     setSaving(false)
     toast(existing ? 'Recipe saved' : 'Recipe added to your library')
     onDone(newId)
@@ -79,13 +88,19 @@ export function RecipeEditor({ lib, id, copyFrom, onDone }: { lib: Library; id: 
   return (
     <div className="view editor">
       <header className="view-head row">
-        <h1>{existing ? 'Edit recipe' : copyFrom ? 'Duplicate recipe' : 'New recipe'}<span className="sub">{existing ? existing.name : 'Saved to your private library'}</span></h1>
+        <h1>{existing ? 'Edit recipe' : seed ? 'Check the import' : copyFrom ? 'Duplicate recipe' : 'New recipe'}<span className="sub">{existing ? `${existing.name}. Saving keeps the old version.` : seed ? 'Look over each ingredient and amount before saving.' : 'Saved to your private library'}</span></h1>
         <div className="head-actions">
           <button className="btn ghost" onClick={() => onDone(null)}>Cancel</button>
           <button className="btn primary" onClick={save} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
         </div>
       </header>
       {err && <p className="err" role="alert">{err}</p>}
+      {unmatched.length > 0 && (
+        <div className="note-bar warn-bar unmatched">
+          <span>Couldn't match {unmatched.length} line{unmatched.length > 1 ? 's' : ''} to an ingredient. Add {unmatched.length > 1 ? 'them' : 'it'} with Add ingredient, or skip.</span>
+          <ul>{unmatched.map((u, i) => <li key={i}><span>{u}</span><button className="btn ghost small-btn" onClick={() => setUnmatched((x) => x.filter((_, j) => j !== i))}>Skip</button></li>)}</ul>
+        </div>
+      )}
       <div className="ed-grid">
         <div className="ed-main">
           <section className="panel">
@@ -111,8 +126,9 @@ export function RecipeEditor({ lib, id, copyFrom, onDone }: { lib: Library; id: 
                 return (
                   <li key={row.key}>
                     <button className="ing-pick" onClick={() => setPicking(row.key)} aria-label={`Change ingredient, currently ${c?.name ?? 'missing'}`}>{c?.name ?? 'Missing ingredient'}<Icon name="chev" size={16} /></button>
-                    <span className="inp small"><input aria-label={`${c?.name} amount`} id={`q-${row.key}`} type="number" inputMode="decimal" step="any" value={row.quantity} onChange={(e) => setRow(row.key, { quantity: e.target.value })} /><em>{unitOf(c)}</em></span>
+                    <span className="inp small"><input aria-label={`${c?.name} amount`} id={`q-${row.key}`} type="number" inputMode="decimal" step="any" value={row.quantity} onChange={(e) => setRow(row.key, { quantity: e.target.value, flag: undefined })} /><em>{unitOf(c)}</em></span>
                     <select aria-label={`${c?.name} role`} id={`role-${row.key}`} value={row.role} onChange={(e) => setRow(row.key, { role: e.target.value as Role })}>{ROLES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+                    {row.flag && <span className="row-flag">{row.flag}</span>}
                     <input className="note-in" aria-label={`${c?.name} note`} id={`n-${row.key}`} placeholder="Note, e.g. diced" value={row.notes} onChange={(e) => setRow(row.key, { notes: e.target.value })} />
                     <button className="icon-btn" aria-label={`Remove ${c?.name}`} onClick={() => setD((x) => ({ ...x, rows: x.rows.filter((r) => r.key !== row.key) }))}><Icon name="trash" size={18} /></button>
                   </li>
@@ -294,5 +310,58 @@ export function IngredientForm({ lib, item, seedName = '', onDone }: { lib: Libr
         <button className="btn ghost" onClick={() => onDone(null)}>Cancel</button>
       </div>
     </div>
+  )
+}
+
+/* ---------------- Add a recipe: link, photo, pasted text or by hand ---------------- */
+export function AddRecipeSheet({ lib, open, onClose, onSeed, onManual }: { lib: Library; open: boolean; onClose: () => void; onSeed: (s: Seed) => void; onManual: () => void }) {
+  const [mode, setMode] = useState<'menu' | 'link' | 'photo' | 'text'>('menu')
+  const [text, setText] = useState('')
+  const [url, setUrl] = useState('')
+  const close = () => { setMode('menu'); onClose() }
+  const items: [typeof mode | 'manual', string, string, string][] = [
+    ['link', 'ext', 'From a link', 'A recipe site or a YouTube video'],
+    ['photo', 'camera', 'From a photo or screenshot', 'A cookbook page, a card, an Instagram post'],
+    ['text', 'recipes', 'Paste the text', 'Anything you copied: notes, a message, a caption'],
+    ['manual', 'edit', 'Write it yourself', 'Start from a blank recipe'],
+  ]
+  return (
+    <Sheet open={open} onClose={close} title={mode === 'menu' ? 'Add a recipe' : mode === 'link' ? 'From a link' : mode === 'photo' ? 'From a photo' : 'Paste the text'}>
+      <div className="ing-form">
+        {mode === 'menu' && (
+          <ul className="add-menu">
+            {items.map(([k, icon, title, sub]) => (
+              <li key={k}><button className="pick" onClick={() => (k === 'manual' ? (close(), onManual()) : setMode(k as typeof mode))}>
+                <span className="am-icon" aria-hidden="true"><Icon name={icon} size={22} /></span>
+                <span className="gi-main"><span className="pick-name">{title}</span><span className="pick-meta">{sub}</span></span>
+              </button></li>
+            ))}
+          </ul>
+        )}
+        {mode === 'link' && (
+          <>
+            <label className="field" htmlFor="imp-url"><span>Link</span><span className="inp"><input id="imp-url" type="url" inputMode="url" placeholder="https://" value={url} onChange={(e) => setUrl(e.target.value)} /></span></label>
+            <p className="small">In the app, Gather reads the recipe from the page. For a YouTube video it uses the description, pinned comment and captions. You then check every ingredient on the same review screen, and the recipe keeps a link back to where it came from.</p>
+            <p className="muted small">This preview can't open other websites. Copy the recipe text from the page and paste it instead.</p>
+            <button className="btn primary wide" onClick={() => setMode('text')}>Paste the text instead</button>
+          </>
+        )}
+        {mode === 'photo' && (
+          <>
+            <p className="small">In the app, Gather reads the text in the photo, then shows the same review screen. Handwriting and blurry shots get flagged for a closer look.</p>
+            <p className="muted small">This preview doesn't read photos yet.</p>
+            <button className="btn primary wide" onClick={() => setMode('text')}>Paste the text instead</button>
+          </>
+        )}
+        {mode === 'text' && (
+          <>
+            <label className="field" htmlFor="imp-txt"><span>Recipe text</span><textarea id="imp-txt" rows={10} value={text} onChange={(e) => setText(e.target.value)} placeholder={'Chicken burrito bowls\nServes 4\nIngredients\n1.5 lb chicken thighs\n1 cup jasmine rice\n2 tbsp olive oil\n...\nInstructions\n1. Cook the rice...'} /></label>
+            <button className="btn primary wide" disabled={!text.trim()} onClick={() => { const s = parseRecipeText(lib, text); close(); setText(''); onSeed(s) }}>Read the recipe</button>
+            <p className="muted small">Amounts are divided by the servings it says it makes, so the recipe is saved as one serving.</p>
+          </>
+        )}
+        {mode !== 'menu' && <button className="btn ghost wide" onClick={() => setMode('menu')}>Back</button>}
+      </div>
+    </Sheet>
   )
 }

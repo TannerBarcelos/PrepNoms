@@ -63,7 +63,11 @@ export interface StoredRecipe extends Recipe {
   hidden?: boolean
   base?: Recipe
   updatedAt?: string
+  /* Every saved version, oldest first. pos is the one in use; moving back and forward never deletes a version. */
+  history?: RecipeVersion[]
+  pos?: number
 }
+export interface RecipeVersion { at: string; note: string; recipe: Recipe }
 
 export interface Targets {
   caloriesKcal?: number
@@ -110,10 +114,10 @@ export interface Personal {
   plan: ProfileState
   done: Record<string, boolean>
   portion?: Record<string, { totals: Record<string, number>; filled: Record<string, boolean[]> }>
-  extras?: Record<string, LoggedFood[]>
+  /* What was last copied to the calorie tracker, per recipe, so the app can say when a recipe changed since. */
+  exports?: Record<string, { sig: string; at: string; kcal: number }>
   updatedAt: string
 }
-export interface LoggedFood { id: string; name: string; section: 'breakfast' | 'lunch' | 'dinner' | 'snacks'; macro: Macro }
 
 export type SlotSummary = { name: string; mode: Mode } | null
 /* What each person publishes for the other: meal names and prep/fresh only, plus grocery needs. */

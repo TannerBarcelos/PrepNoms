@@ -33,7 +33,7 @@ export function Settings({ lib, derived }: { lib: Library; derived: Derived }) {
   )
   const plan = () => ({
     schema: 'gather.plan', version: 3, profile: me.profile, weekOf: p.weekOf, targets: derived.targets,
-    days: derived.days.map((d) => ({ day: d.day, totals: d.totals, entries: d.entries.map((e) => ({ slot: e.slot, name: e.name, recipeId: e.recipeId, mode: e.mode, macro: e.macro, foodnoms: e.recipeId ? foodnoms(lib, lib.recipes[e.recipeId], derived.formulas[e.recipeId], ', ') : undefined })) })),
+    days: derived.days.map((d) => ({ day: d.day, totals: d.totals, entries: d.entries.map((e) => ({ slot: e.slot, name: e.name, recipeId: e.recipeId, mode: e.mode, macro: e.macro, ingredients: e.recipeId ? foodnoms(lib, lib.recipes[e.recipeId], derived.formulas[e.recipeId], ', ') : undefined })) })),
   })
   const syncText = { local: 'Saved on this device only. Open Gather from claude.ai to sync.', saving: 'Saving…', synced: 'Saved and synced.', offline: "Offline. Changes are kept here and will save when the connection returns.", readonly: "Your access is view-only, so changes aren't saved." }[sync]
   return (
@@ -53,7 +53,7 @@ export function Settings({ lib, derived }: { lib: Library; derived: Derived }) {
             {num('t-share', 'Lunch share of meals', Math.round(t.lunchShare * 100), '%', (v) => setT('lunchShare', v))}
             {num('t-min', 'Smallest meal', t.minMealKcal, 'Cal', (v) => setT('minMealKcal', v))}
           </div>
-          <p className="muted small">Match these to your Foodnoms goals. A lunch share under 50% makes dinner the bigger meal.</p>
+          <p className="muted small">Match these to the goals in your calorie tracker. A lunch share under 50% makes dinner the bigger meal.</p>
         </section>
 
         <section className="panel">
